@@ -346,7 +346,7 @@ class Font extends PDFObject
      */
     protected function getFontSpaceLimit()
     {
-        return -50;
+        return -30;
     }
 
     /**
