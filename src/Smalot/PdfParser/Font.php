@@ -497,7 +497,7 @@ class Font extends PDFObject
                     $text = $result;
 
                     if ($encoding->get('BaseEncoding')->equals('MacRomanEncoding')) {
-                        $text = mb_convert_encoding($text, 'UTF-8', 'Windows-1252');
+                        $text = iconv('macintosh','UTF-8',$text);
 
                         return $text;
                     }
