@@ -5,8 +5,11 @@
  *          This file is part of the PdfParser library.
  *
  * @author  Sébastien MALOT <sebastien@malot.fr>
+ *
  * @date    2017-01-03
+ *
  * @license LGPLv3
+ *
  * @url     <https://github.com/smalot/pdfparser>
  *
  *  PdfParser is a pdf library written in PHP, extraction oriented.
@@ -25,69 +28,66 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program.
  *  If not, see <http://www.pdfparser.org/sites/default/LICENSE.txt>.
- *
  */
 
 namespace Smalot\PdfParser\Element;
 
-use Smalot\PdfParser\Element;
 use Smalot\PdfParser\Document;
+use Smalot\PdfParser\Element;
 
 /**
  * Class ElementXRef
- *
- * @package Smalot\PdfParser\Element
  */
 class ElementXRef extends Element
 {
-    /**
-     * @return string
-     */
-    public function getId()
+    public function getId(): string
     {
         return $this->getContent();
     }
 
-    /**
-     * @return mixed
-     */
     public function getObject()
     {
         return $this->document->getObjectById($this->getId());
     }
 
-    /**
-     * @param mixed $value
-     *
-     * @return bool
-     */
-    public function equals($value)
+    public function equals($value): bool
     {
-        $id = ($value instanceof ElementXRef) ? $value->getId() : $value;
+        /**
+         * In case $value is a number and $this->value is a string like 5_0
+         *
+         * Without this if-clause code like:
+         *
+         *      $element = new ElementXRef('5_0');
+         *      $this->assertTrue($element->equals(5));
+         *
+         * would fail (= 5_0 and 5 are not equal in PHP 8.0+).
+         */
+        if (
+            true === is_numeric($value)
+            && true === \is_string($this->getContent())
+            && 1 === preg_match('/[0-9]+\_[0-9]+/', $this->getContent(), $matches)
+        ) {
+            return (float) $this->getContent() == $value;
+        }
+
+        $id = ($value instanceof self) ? $value->getId() : $value;
 
         return $this->getId() == $id;
     }
 
-    /**
-     * @return string
-     */
-    public function __toString()
+    public function __toString(): string
     {
-        return '#Obj#' . $this->getId();
+        return '#Obj#'.$this->getId();
     }
 
     /**
-     * @param string   $content
-     * @param Document $document
-     * @param int      $offset
-     *
      * @return bool|ElementXRef
      */
-    public static function parse($content, Document $document = null, &$offset = 0)
+    public static function parse(string $content, ?Document $document = null, int &$offset = 0)
     {
         if (preg_match('/^\s*(?P<id>[0-9]+\s+[0-9]+\s+R)/s', $content, $match)) {
             $id = $match['id'];
-            $offset += strpos($content, $id) + strlen($id);
+            $offset += strpos($content, $id) + \strlen($id);
             $id = str_replace(' ', '_', rtrim($id, ' R'));
 
             return new self($id, $document);

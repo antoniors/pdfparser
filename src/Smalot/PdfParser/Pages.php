@@ -5,8 +5,11 @@
  *          This file is part of the PdfParser library.
  *
  * @author  Sébastien MALOT <sebastien@malot.fr>
+ *
  * @date    2017-01-03
+ *
  * @license LGPLv3
+ *
  * @url     <https://github.com/smalot/pdfparser>
  *
  *  PdfParser is a pdf library written in PHP, extraction oriented.
@@ -25,46 +28,46 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program.
  *  If not, see <http://www.pdfparser.org/sites/default/LICENSE.txt>.
- *
  */
 
 namespace Smalot\PdfParser;
 
+use Smalot\PdfParser\Element\ElementArray;
+
 /**
  * Class Pages
- *
- * @package Smalot\PdfParser
  */
 class Pages extends PDFObject
 {
     /**
-     * @param bool $deep
+     * @todo Objects other than Pages or Page might need to be treated specifically in order to get Page objects out of them,
      *
-     * @return array
+     * @see https://github.com/smalot/pdfparser/issues/331
      */
-    public function getPages($deep = false)
+    public function getPages(bool $deep = false): array
     {
-        if ($this->has('Kids')) {
+        if (!$this->has('Kids')) {
+            return [];
+        }
 
-            if (!$deep) {
-                return $this->get('Kids')->getContent();
-            } else {
-                $kids  = $this->get('Kids')->getContent();
-                $pages = array();
+        /** @var ElementArray $kidsElement */
+        $kidsElement = $this->get('Kids');
 
-                foreach ($kids as $kid) {
+        if (!$deep) {
+            return $kidsElement->getContent();
+        }
 
-                    if ($kid instanceof Pages) {
-                        $pages = array_merge($pages, $kid->getPages(true));
-                    } else {
-                        $pages[] = $kid;
-                    }
-                }
+        $kids = $kidsElement->getContent();
+        $pages = [];
 
-                return $pages;
+        foreach ($kids as $kid) {
+            if ($kid instanceof self) {
+                $pages = array_merge($pages, $kid->getPages(true));
+            } elseif ($kid instanceof Page) {
+                $pages[] = $kid;
             }
         }
 
-        return array();
+        return $pages;
     }
 }

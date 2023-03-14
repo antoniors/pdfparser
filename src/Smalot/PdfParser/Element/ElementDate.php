@@ -5,8 +5,11 @@
  *          This file is part of the PdfParser library.
  *
  * @author  Sébastien MALOT <sebastien@malot.fr>
+ *
  * @date    2017-01-03
+ *
  * @license LGPLv3
+ *
  * @url     <https://github.com/smalot/pdfparser>
  *
  *  PdfParser is a pdf library written in PHPi, extraction oriented.
@@ -25,28 +28,24 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program.
  *  If not, see <http://www.pdfparser.org/sites/default/LICENSE.txt>.
- *
  */
 
 namespace Smalot\PdfParser\Element;
 
-use Smalot\PdfParser\Element;
 use Smalot\PdfParser\Document;
 
 /**
  * Class ElementDate
- *
- * @package Smalot\PdfParser\Element
  */
 class ElementDate extends ElementString
 {
     /**
      * @var array
      */
-    protected static $formats = array(
-        4  => 'Y',
-        6  => 'Ym',
-        8  => 'Ymd',
+    protected static $formats = [
+        4 => 'Y',
+        6 => 'Ym',
+        8 => 'Ymd',
         10 => 'YmdH',
         12 => 'YmdHi',
         14 => 'YmdHis',
@@ -54,7 +53,7 @@ class ElementDate extends ElementString
         17 => 'YmdHisO',
         18 => 'YmdHisO',
         19 => 'YmdHisO',
-    );
+    ];
 
     /**
      * @var string
@@ -62,32 +61,25 @@ class ElementDate extends ElementString
     protected $format = 'c';
 
     /**
-     * @param \DateTime $value
-     * @param Document  $document
+     * @var \DateTime
      */
-    public function __construct($value, Document $document = null)
+    protected $value;
+
+    public function __construct($value)
     {
         if (!($value instanceof \DateTime)) {
-            throw new \Exception('DateTime required.');
+            throw new \Exception('DateTime required.'); // FIXME: Sometimes strings are passed to this function
         }
 
-        parent::__construct($value, null);
+        parent::__construct($value);
     }
 
-    /**
-     * @param string $format
-     */
-    public function setFormat($format)
+    public function setFormat(string $format)
     {
         $this->format = $format;
     }
 
-    /**
-     * @param mixed $value
-     *
-     * @return bool
-     */
-    public function equals($value)
+    public function equals($value): bool
     {
         if ($value instanceof \DateTime) {
             $timestamp = $value->getTimeStamp();
@@ -95,25 +87,18 @@ class ElementDate extends ElementString
             $timestamp = strtotime($value);
         }
 
-        return ($timestamp == $this->value->getTimeStamp());
+        return $timestamp == $this->value->getTimeStamp();
     }
 
-    /**
-     * @return string
-     */
-    public function __toString()
+    public function __toString(): string
     {
-        return (string)($this->value->format($this->format));
+        return (string) $this->value->format($this->format);
     }
 
     /**
-     * @param string   $content
-     * @param Document $document
-     * @param int      $offset
-     *
      * @return bool|ElementDate
      */
-    public static function parse($content, Document $document = null, &$offset = 0)
+    public static function parse(string $content, ?Document $document = null, int &$offset = 0)
     {
         if (preg_match('/^\s*\(D\:(?P<name>.*?)\)/s', $content, $match)) {
             $name = $match['name'];
@@ -125,18 +110,18 @@ class ElementDate extends ElementString
             if (preg_match('/^\d{4}(\d{2}(\d{2}(\d{2}(\d{2}(\d{2}(Z(\d{2,4})?|[\+-]?\d{2}(\d{2})?)?)?)?)?)?)?$/', $name)) {
                 if ($pos = strpos($name, 'Z')) {
                     $name = substr($name, 0, $pos + 1);
-                } elseif (strlen($name) == 18 && preg_match('/[^\+-]0000$/', $name)) {
-                    $name = substr($name, 0, -4) . '+0000';
+                } elseif (18 == \strlen($name) && preg_match('/[^\+-]0000$/', $name)) {
+                    $name = substr($name, 0, -4).'+0000';
                 }
 
-                $format = self::$formats[strlen($name)];
-                $date   = \DateTime::createFromFormat($format, $name, new \DateTimeZone('UTC'));
+                $format = self::$formats[\strlen($name)];
+                $date = \DateTime::createFromFormat($format, $name, new \DateTimeZone('UTC'));
             } else {
                 // special cases
                 if (preg_match('/^\d{1,2}-\d{1,2}-\d{4},?\s+\d{2}:\d{2}:\d{2}[\+-]\d{4}$/', $name)) {
-                    $name   = str_replace(',', '', $name);
+                    $name = str_replace(',', '', $name);
                     $format = 'n-j-Y H:i:sO';
-                    $date   = \DateTime::createFromFormat($format, $name, new \DateTimeZone('UTC'));
+                    $date = \DateTime::createFromFormat($format, $name, new \DateTimeZone('UTC'));
                 }
             }
 
@@ -144,10 +129,9 @@ class ElementDate extends ElementString
                 return false;
             }
 
-            $offset += strpos($content, '(D:') + strlen($match['name']) + 4; // 1 for '(D:' and ')'
-            $element = new self($date, $document);
+            $offset += strpos($content, '(D:') + \strlen($match['name']) + 4; // 1 for '(D:' and ')'
 
-            return $element;
+            return new self($date);
         }
 
         return false;
